@@ -1,0 +1,54 @@
+version: '3.8'
+
+# Development compose - only infrastructure services
+# Frontend and Backend run locally for hot reload
+
+services:
+  # ===========================================
+  # PostgreSQL Database (with TimescaleDB)
+  # ===========================================
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=observatory
+    volumes:
+      - postgres-dev-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - observatory-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+    networks:
+      - observatory-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  observatory-dev:
+    driver: bridge
+
+volumes:
+  postgres-dev-data:
+  redis-dev-data:
